@@ -4,6 +4,7 @@ import { ApiDelete, ApiGet, ApiPost } from "../../helpers/API/ApiData";
 import Loding from '../../Components/Loding/Loding'
 import { notification } from 'antd';
 import { ENDPOINTS } from "../../config/API/api-prod";
+import Image from 'next/image';
 
 const index = () => {
   const router = useRouter();
@@ -54,9 +55,12 @@ const index = () => {
     <Loding display={lodingState} blure={true}/>
       <div className="loginpage">
         <div className="loginpage-img">
-          <img
-            src="/image/homepage/signup.svg"
-            alt="sda"
+          <Image
+            src="/images/logo.png"
+            alt="Logo"
+            width={200}
+            height={100}
+            priority
             className="loginpage-img-logo"
           />
         </div>
