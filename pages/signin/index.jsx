@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { ApiDelete, ApiGet, ApiPost } from "../../helpers/API/ApiData";
+import { ApiPost } from "../../helpers/API/ApiData";
 import Loding from '../../Components/Loding/Loding'
 import { notification } from 'antd';
 import { ENDPOINTS } from "../../config/API/api-prod";
-import Image from 'next/image';
 
 const index = () => {
   const router = useRouter();
@@ -25,28 +24,39 @@ const index = () => {
   };
 
   const SubmitData = async (e) => {
-    setlodingState(true)
+    setlodingState(true);
     e.preventDefault();
     try {
       const response = await ApiPost(ENDPOINTS.LOGIN, getData);
-      if (response.data) {
-        localStorage.setItem("token", JSON.stringify(response.data.token));
+      console.log('Login response:', response); // For debugging
+      
+      if (response.data && response.data.token) {
+        // Store token without JSON.stringify since it's already a string
+        localStorage.setItem("token", response.data.token);
         localStorage.setItem("userInfo", JSON.stringify(response.data.user));
-        router.push("/dashboard");
-        notification.open({
-          message: 'Sign In',
-          description: "Sign in Successful,"
+        
+        notification.success({
+          message: 'Sign In Successful',
+          description: "Welcome back!",
+          duration: 3,
         });
+        
+        router.push("/dashboard");
+      } else {
+        throw new Error('Invalid response from server');
       }
     } catch (error) {
       console.error("Login error:", error);
-      notification.open({
-        message: 'Error',
-        description: error.response?.data?.message || "Login failed. Please try again.",
-      });
+      localStorage.removeItem("token");
       localStorage.removeItem("userInfo");
+      
+      notification.error({
+        message: 'Login Failed',
+        description: error.response?.data?.message || "Please check your email and password and try again.",
+        duration: 4,
+      });
     } finally {
-      setlodingState(false)
+      setlodingState(false);
     }
   };
 
@@ -55,17 +65,14 @@ const index = () => {
     <Loding display={lodingState} blure={true}/>
       <div className="loginpage">
         <div className="loginpage-img">
-          <Image
-            src="/images/logo.png"
+          <img
+            src="/image/homepage/signup.svg"
             alt="Logo"
-            width={200}
-            height={100}
-            priority
             className="loginpage-img-logo"
           />
         </div>
         <div className="loginpage-section">
-          <form className="loginpage-section-mainform">
+          <form className="loginpage-section-mainform" onSubmit={SubmitData}>
             <div className="mb-3">
               <input
                 type="email"
@@ -91,7 +98,10 @@ const index = () => {
                 required
               />
             </div>
-            <button className="loginbtn" onClick={(e) => SubmitData(e)}>
+            <button 
+              type="submit" 
+              className="loginbtn"
+            >
               SIGN IN
             </button>
           </form>
