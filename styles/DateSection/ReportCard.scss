@@ -1,0 +1,110 @@
+@import "../globals.scss";
+
+.reviewCardSection{
+    width: 100%;
+    height: 500px;
+     border-radius: 10px;
+     margin-top: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+     .cardcommon{
+         min-width: 700px;
+         background-color: $navbar-color;
+         height: 400px;
+         border-radius: 10px;
+         margin: 10px;
+    position: relative;
+    @media only screen and (max-width: 1300px) {
+        min-width: 500px;
+    }
+        @media only screen and (max-width: 800px) {
+            min-width: 100%;
+        }
+     }
+
+     .AddbuttonData{
+         width: 30px;
+         height: 30px;
+         border-radius: 50%;
+         background-color: $orange-color;
+         color: white;
+         font-size: 20px;
+         font-weight: 800;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         position: absolute;
+         right: 10px;
+         top: 10px;
+         cursor: pointer;
+        }
+
+        .dataContainer{
+            margin:10px 30px;
+            height: 80%;
+            overflow: scroll;
+            &::-webkit-scrollbar {
+                display: none;
+              }
+        }
+
+        .projectHeading{
+            font-size: 25px;
+            color: white;
+            font-weight: 700;
+
+        }
+        .subtask{
+            color: white;
+            padding-left: 25px;
+            font-size: 18px;
+            position: relative;
+        }
+        .headingCard{
+            font-size: 25px;
+            padding-left: 15px;
+            padding-top: 15px;
+            color: $orange-color;
+        }
+
+        .iconsBox{
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+            cursor: pointer;
+
+            width: 40px;
+            height: 40px;
+            img{
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        .errormassage{
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            color: white;
+        }
+
+        .deletebtnimg{
+            width: 20px;
+            height: 20px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+        .btncssBox{
+            position: absolute;
+            display: flex;
+            flex-direction: row;
+            right: 0;
+            top: 0;
+        }
+}

@@ -1,0 +1,53 @@
+@import "../globals.scss";
+.navbig {
+    width: 200px !important;
+    border-radius: 0 20px 20px 0px;
+}
+
+.navbarcss {
+    width: 50px;
+    height: 100vh;
+    z-index: 9999;
+    background-color: #454545;
+    position: fixed;
+    top: 0;
+    display: flex;
+    transition: 1s;
+    flex-direction: column;
+    overflow: hidden;
+    .notification_active {
+        width: 10px;
+        height: 10px;
+        background-color: red;
+        position: absolute;
+        border-radius: 20px;
+        margin-left: 15px;
+    }
+    .iconMain {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .imageIcon {
+        width: 25px;
+        cursor: pointer;
+        height: 25px;
+        margin-bottom: 20px;
+    }
+    .imageIcon2 {
+        position: absolute;
+        bottom: 5px;
+    }
+    .navbarItm {
+        display: flex;
+        flex-direction: row;
+        margin-left: 15px;
+        width: 180px;
+    }
+    .menuName {
+        font-size: 16px;
+        cursor: pointer;
+        color: white;
+        margin-left: 20px;
+    }
+}

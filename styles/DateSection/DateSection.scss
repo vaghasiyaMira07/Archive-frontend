@@ -1,0 +1,90 @@
+@import "../globals.scss";
+
+
+.DateSection{
+ .mainSection{
+     width: 100%;
+     background-color: $navbar-color;
+    //  height: 500px;
+     border-radius: 10px;
+     padding: 25px;
+ }
+
+ .yearSelector{
+     width: 100%;
+     display: flex;
+     flex-direction: row;
+     @media only screen and (max-width: 800px) {
+     flex-direction: column;
+    }
+ }
+
+ .formField{
+     margin: 10px;
+     width: 20%;
+     @media only screen and (max-width: 800px) {
+        width: 100%;
+        margin: 5px;
+
+    }
+     label{
+         color: white;
+     }
+ }
+
+
+ .dateShowBox{
+    @media only screen and (max-width: 1300px) {
+        overflow-x: scroll;
+    }
+     &-data{
+     display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 20px;
+
+    @media only screen and (max-width: 1300px) {
+        flex-wrap:initial;
+        width: 2174px;
+    }
+
+}
+    
+    }
+    .dateBox{
+    transition: 1s;
+
+   
+     cursor: pointer;
+     margin: 5px 5px;
+     width: 60px;
+     color: white;
+     &:hover{
+        background-color: $orange-color;
+    } 
+
+    &-active{
+        background-color: $orange-color;
+    }
+     
+    //  background-color: $orange-color;
+     border: 1px solid $orange-color;
+     border-radius: 10px;
+     display: flex;
+     justify-content: center;
+     flex-direction: column;
+     align-items: center;
+     height: 80px;
+
+     .dayName{
+         font-size: 18px;
+         font-weight: 700;
+         margin-bottom: 0 !important;
+     }
+     .dateNumber{
+         font-size: 16px;
+         font-weight: 600;
+         margin: 0 !important;
+     }
+ }
+}

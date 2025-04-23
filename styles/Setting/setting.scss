@@ -1,0 +1,80 @@
+@import "../globals.scss";
+// .settingpage {
+//     width: 50%;
+//     padding-top: 50px;
+//     .iconsBox {
+//         width: 92%;
+//         position: absolute;
+//         bottom: 10px;
+//         top: 20px;
+//         display: flex;
+//         justify-content: flex-end;
+//         margin: 0;
+//     }
+//     .slackicon {
+//         width: 35px;
+//         height: 35px;
+//         bottom: 0;
+//         margin: 20px 30x 20px 0;
+//         cursor: pointer;
+//     }
+// }
+.settingSection {
+    width: 100%;
+    padding: 0 10px 0 0;
+    .backgroundimage {
+        width: 100%;
+        height: 300px;
+        border-radius: 13px;
+        position: relative;
+        background-color: black;
+        .bgImage {
+            width: 100%;
+            border-radius: 13px;
+            height: 100%;
+            object-fit: cover;
+            opacity: 50%;
+        }
+        .userImage {
+            position: absolute;
+            bottom: -50%;
+            left: 50%;
+            width: 150px;
+            object-fit: cover;
+            height: 150px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            border: solid 6px white;
+        }
+    }
+    .iconsBox {
+        width: 92%;
+        position: absolute;
+        top: 30px;
+        right: 20px;
+        display: flex;
+        justify-content: flex-end;
+        margin: 0;
+    }
+    .slackicon {
+        width: 35px;
+        height: 35px;
+        bottom: 0;
+        margin: 20px 30x 20px 0;
+        cursor: pointer;
+    }
+    .userInfoCard {
+        width: 100%;
+        height: 500px;
+        margin-top: 90px;
+        border-radius: 16px;
+        padding: 20px;
+        background-color: $navbar-color;
+        .cardForm {
+            width: 30%;
+            @media only screen and (max-width: 900px) {
+                width: 100%;
+            }
+        }
+    }
+}

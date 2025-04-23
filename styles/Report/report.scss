@@ -1,0 +1,48 @@
+@import "../globals.scss";
+.Reportpage {
+    padding-top: 20px;
+    padding-right: 30px;
+    .Addreport {
+        // width: 100%;
+        // display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        // flex-direction: row;
+    }
+   
+    .addPlanbtn {
+        width: 150px;
+        height: 40px !important;
+        background-color: $orange-color;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 16px;
+        color: white;
+    }
+    .tablemain {
+        overflow-y: scroll;
+    }
+    .heading {
+        font-size: 20px;
+        padding-bottom: 10px;
+    }
+}
+
+.tableCss {
+    background-color: $navbar-color;
+    .ant-table-thead {
+        tr {
+            th {
+                background-color: $orange-color !important;
+                color: white !important;
+            }
+        }
+    }
+    .ant-table-cell {
+        background-color: $navbar-color !important;
+        color: white !important;
+    }
+}
