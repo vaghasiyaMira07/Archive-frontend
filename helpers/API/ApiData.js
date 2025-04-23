@@ -12,35 +12,79 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  // Add timeout and retry logic
+  timeout: 10000, // 10 seconds
+  retries: 3,
+  retryDelay: 1000,
 });
 
 // Add request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      // Remove quotes if token is stored with them
-      const cleanToken = token.replace(/^"|"$/g, "");
-      config.headers.Authorization = `Bearer ${cleanToken}`;
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // Remove quotes if token is stored with them
+        const cleanToken = token.replace(/^"|"$/g, "");
+        config.headers.Authorization = `Bearer ${cleanToken}`;
+      }
+      // Log the request for debugging
+      console.log(`${config.method?.toUpperCase()} Request to:`, config.url);
+      return config;
+    } catch (error) {
+      console.error("Request interceptor error:", error);
+      return config;
     }
-    return config;
   },
   (error) => {
+    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
 
 // Add response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response) => {
+    // Log successful responses for debugging
+    console.log(`Response from ${response.config.url}:`, response.status);
+    return response;
+  },
+  async (error) => {
     console.error("API Error:", error.response || error);
+
+    // Get the original request config
+    const originalRequest = error.config;
+
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem("token");
       localStorage.removeItem("userInfo");
       window.location.href = "/signin";
+    } else if (error.response?.status === 404) {
+      // Log detailed information for 404 errors
+      console.error("Resource not found:", {
+        url: originalRequest.url,
+        method: originalRequest.method,
+        headers: originalRequest.headers,
+      });
     }
+
+    // Implement retry logic for failed requests
+    if (originalRequest._retry !== true && originalRequest.retries > 0) {
+      originalRequest._retry = true;
+      originalRequest.retries -= 1;
+
+      try {
+        // Wait before retrying
+        await new Promise((resolve) =>
+          setTimeout(resolve, originalRequest.retryDelay)
+        );
+        return await api(originalRequest);
+      } catch (retryError) {
+        return Promise.reject(retryError);
+      }
+    }
+
     return Promise.reject(error);
   }
 );
@@ -82,6 +126,27 @@ export const ApiDelete = async (endpoint) => {
     return response;
   } catch (error) {
     console.error(`DELETE ${endpoint} failed:`, error.response || error);
+    throw error;
+  }
+};
+
+// Specialized functions for project and user endpoints
+export const getProjectUsers = async () => {
+  try {
+    const response = await ApiGet("/project/selectuser");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch project users:", error);
+    throw error;
+  }
+};
+
+export const getAllUsers = async () => {
+  try {
+    const response = await ApiGet("/user/find-all");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch all users:", error);
     throw error;
   }
 };
@@ -249,4 +314,6 @@ export default {
   ApiUpload,
   ApiPostNoAuth,
   ApiGetNoAuth,
+  getProjectUsers,
+  getAllUsers,
 };

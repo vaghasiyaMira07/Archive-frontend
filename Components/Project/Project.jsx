@@ -4,23 +4,16 @@ import Searchbar from "../SmallComponent/Searchbar";
 import React from "react";
 import { useState, useEffect } from "react";
 import { ApiGet } from "../../helpers/API/ApiData";
-import { ENDPOINTS } from "../../config/API/api-prod";
-import { notification } from "antd";
 import { useAtom } from "jotai";
 import { userMainData, projectData, USER } from "../Jotai/atom";
 import { LODING } from "../Jotai/atom.js";
 import Loding from "../Loding/Loding";
 
 const Project = () => {
-  const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [userData, setUserData] = useState(null);
   const [filterData, setfilterData] = useState([]);
   const [userfilterData, setuserfilterData] = useState([]);
   const [typeview, selectview] = useState("Project");
+  const [usersData, setData] = useState({});
   const [mainData, setAllData] = useAtom(userMainData);
   const [allProjectData, setProjectData] = useAtom(projectData);
   const [getUSER, setUSER] = useAtom(USER);
@@ -28,66 +21,44 @@ const Project = () => {
   const [selectProject, setselectProject] = useState();
   
   useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-    if (userInfo) {
-      setUserData(userInfo);
+    const USERDATA=JSON.parse(localStorage.getItem("userInfo"))
+    setData(JSON.parse(localStorage.getItem("userInfo")));
+    setUSER(JSON.parse(localStorage.getItem("userInfo")));
+    if(USERDATA?.role==='admin'){
       handleGetProject();
       handleGetUser();
     }
   }, []);
 
   const handleGetProject = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching projects...');
-      
-      const response = await ApiGet(ENDPOINTS.PROJECTS);
-      console.log('Projects response:', response);
-      
-      if (response.data) {
-        setProjects(response.data);
-        setfilterData(response.data);
-        setProjectData(response.data);
+    setlodingState(true);
+
+    await ApiGet("project/find-all")
+      .then((res) => {
+        setfilterData(res?.data?.data);
+        setProjectData(res?.data?.data);
         setlodingState(false);
-        setselectProject(response.data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      setError(error.response?.data?.message || 'Failed to fetch projects');
-      notification.error({
-        message: 'Error',
-        description: 'Failed to fetch projects. Please try again.',
+        setselectProject(res?.data?.data[0])
+      })
+      .catch((err) => {
+        setlodingState(false);
+        console.log("error in post temp data!!");
       });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleGetUser = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching users...');
-      
-      const response = await ApiGet(ENDPOINTS.USER_PROFILE);
-      console.log('Users response:', response);
-      
-      if (response.data) {
-        setUsers(response.data);
-        setAllData(response.data);
-        setuserfilterData(response.data);
+    setlodingState(true);
+    await ApiGet("user/find-all")
+      .then((res) => {
+        const data = res?.data?.users.filter((data) => data.isActive === true);
+        setAllData(data);
         setlodingState(false);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      notification.error({
-        message: 'Error',
-        description: 'Failed to fetch users. Please try again.',
+        setuserfilterData(data);
+      })
+      .catch((err) => {
+        console.log("error in post temp data!!");
+        setlodingState(false);
       });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const searchvalue = (data) => {
@@ -112,21 +83,10 @@ const Project = () => {
     }
   };
 
-  const handleProjectSelect = (project) => {
-    setSelectedProject(project);
-  };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
 
   return (
     <>
-      {userData && userData.role === "admin" && (
+      {usersData && usersData.role === "admin" && (
         <div className="projectSection">
           <Loding display={lodingState} blure={true} />
           <div className="navbarProject">
@@ -179,21 +139,21 @@ const Project = () => {
               <div className="userprojectShow">
                 {filterData && typeview === "Project" && (
                   <>
-                    {selectedProject && (
+                    {selectProject && (
                       <>
                         <div className="projectDis">
                           <div className="projectTitle">
-                            {selectedProject?.name}
+                            {selectProject?.name}
                           </div>
                           <div className="description">
-                            {selectedProject?.description}
+                            {selectProject?.description}
                           </div>
                           <div className="members">Members:</div>
 
                           <div className="assignmember">
                                 <div className="assignmemberCard">
-                            {selectedProject.assign !== 0 &&
-                              selectedProject?.assign?.map((data) => {
+                            {selectProject.assign !== 0 &&
+                              selectProject?.assign?.map((data) => {
                                 return (
                                     <div className="assignmemberCard-name">
                                      <li> {data.firstName+' '+data.lastName}</li>
@@ -214,7 +174,7 @@ const Project = () => {
         </div>
       )}
 
-      {userData && userData.role !== "admin" && (
+      {usersData && usersData.role !== "admin" && (
         <div className="lockImage">
           <img src="/image/homepage/lock.svg" alt="" className="lockImagecss" />
         </div>
