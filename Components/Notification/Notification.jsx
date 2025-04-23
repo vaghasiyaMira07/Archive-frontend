@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { ApiGet, ApiPost, ApiPut } from "../../helpers/API/ApiData";
-import { notification as antdNotification } from "antd";
+import { notification } from "antd";
 import Image from 'next/image';
 import { LoadingOutlined, CheckCircleOutlined, UserOutlined } from '@ant-design/icons';
+import { ENDPOINTS } from "../../config/API/api-prod";
 
 const Notification = () => {
   const [notifications, setNotifications] = useState([]);
   const [userData, setUserData] = useState({});
-  const [loading, setLoading] = useState({});
+  const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [imageError, setImageError] = useState({});
+  const [error, setError] = useState(null);
 
   // Default avatar as a base64 string to avoid import issues
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHJ4PSIyMCIgZmlsbD0iI2U2ZTZlNiIvPjxwYXRoIGQ9Ik0yMCAxOWE2IDYgMCAxIDAgMC0xMiA2IDYgMCAwIDAgMCAxMnptMCAyYy00LjAwMiAwLTEyIDIuMDEtMTIgNnY0aDI0di00YzAtMy45OS03Ljk5OC02LTEyLTZ6IiBmaWxsPSIjOTk5Ii8+PC9zdmc+";
@@ -43,9 +45,15 @@ const Notification = () => {
 
   const fetchNotifications = async (userId) => {
     try {
-      const response = await ApiGet(`notification/get-notification?userId=${userId}`);
-      if (response.status === 200) {
-        const processedNotifications = response.data.data.map(notification => ({
+      setLoading(true);
+      setError(null);
+      console.log('Fetching notifications for user:', userId);
+      
+      const response = await ApiGet(ENDPOINTS.NOTIFICATIONS, { userId });
+      console.log('Notifications response:', response);
+      
+      if (response.data) {
+        const processedNotifications = response.data.map(notification => ({
           ...notification,
           imageUrl: getImageUrl(notification.imageUrl),
           userImage: getImageUrl(notification.userImage)
@@ -54,39 +62,42 @@ const Notification = () => {
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      antdNotification.error({
-        message: "Error",
-        description: "Failed to fetch notifications",
+      setError(error.response?.data?.message || 'Failed to fetch notifications');
+      notification.error({
+        message: 'Error',
+        description: 'Failed to fetch notifications. Please try again.',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleNotificationClick = async (notification) => {
+  const handleMarkAsRead = async (notificationId) => {
     try {
-      setLoading(prev => ({ ...prev, [notification._id]: 'read' }));
-
-      const response = await ApiPost('notification/update-notification-status', {
-        id: notification._id,
+      console.log('Marking notification as read:', notificationId);
+      
+      const response = await ApiPut(ENDPOINTS.UPDATE_NOTIFICATION, {
+        notificationId,
         status: 'read'
       });
-
-      if (response.status === 200) {
-        antdNotification.success({
-          message: "Success",
-          description: "Notification marked as read",
+      
+      if (response.data) {
+        notification.success({
+          message: 'Success',
+          description: 'Notification marked as read',
         });
-        await fetchNotifications(userData.id);
-      } else {
-        throw new Error('Failed to mark notification as read');
+        
+        // Refresh notifications
+        const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+        if (userInfo) {
+          fetchNotifications(userInfo.id);
+        }
       }
-
-      setLoading(prev => ({ ...prev, [notification._id]: false }));
     } catch (error) {
-      console.error('Error marking as read:', error);
-      setLoading(prev => ({ ...prev, [notification._id]: false }));
-      antdNotification.error({
-        message: "Error",
-        description: "Failed to mark notification as read",
+      console.error('Error marking notification as read:', error);
+      notification.error({
+        message: 'Error',
+        description: 'Failed to update notification. Please try again.',
       });
     }
   };
@@ -126,7 +137,7 @@ const Notification = () => {
       console.log('Daily status creation response:', dailyStatusResponse);
 
       if (dailyStatusResponse.status === 200) {
-        antdNotification.success({
+        notification.success({
           message: "Success",
           description: "Task completed and moved to Daily Status",
         });
@@ -144,7 +155,7 @@ const Notification = () => {
     } catch (error) {
       console.error('Error completing task:', error);
       setLoading(prev => ({ ...prev, [notification._id]: false }));
-      antdNotification.error({
+      notification.error({
         message: "Error",
         description: error.response?.data?.message || error.message || "Failed to complete task",
       });
@@ -161,111 +172,47 @@ const Notification = () => {
     }
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
-    <>
-      <div className="notificationPage">
-        <div className="notificationPage_heading textcolor">
-          Task Notification
-        </div>
-        <div className="notificationSection">
-          {notifications.length === 0 ? (
-            <div className="notificationPage_card">
-              <div className="notificationPage_discretion textcolorWT">
-                No notifications available
+    <div className="notifications-container">
+      <h2>Notifications</h2>
+      {notifications.length > 0 ? (
+        <div className="notifications-list">
+          {notifications.map((notification) => (
+            <div 
+              key={notification._id} 
+              className={`notification-item ${notification.status === 'read' ? 'read' : 'unread'}`}
+            >
+              <div className="notification-content">
+                <p className="notification-message">{notification.message}</p>
+                <span className="notification-time">
+                  {new Date(notification.createdAt).toLocaleString()}
+                </span>
               </div>
+              {notification.status !== 'read' && (
+                <button 
+                  className="mark-read-btn"
+                  onClick={() => handleMarkAsRead(notification._id)}
+                >
+                  Mark as Read
+                </button>
+              )}
             </div>
-          ) : (
-            notifications.map((notification) => (
-              <div 
-                key={notification._id} 
-                className={`notificationPage_card ${notification.status === "completed" ? "completed" : ""}`}
-              >
-                <div className="notificationPage_header">
-                  <div className="notificationPage_userImage">
-                    <div className="image-container">
-                      {!imageError[`${notification._id}-profile`] ? (
-                        <Image 
-                          src={notification.userImage ? getImageUrl(notification.userImage) : defaultAvatar}
-                          alt={notification.userName || "User"}
-                          width={40}
-                          height={40}
-                          className="profile-image"
-                          onError={() => handleImageError(notification._id, 'profile')}
-                          priority
-                          unoptimized={notification.userImage?.startsWith('data:')}
-                        />
-                      ) : (
-                        <div className="fallback-avatar">
-                          <UserOutlined />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="notificationPage_userInfo">
-                    <div className="notificationPage_userName">
-                      {notification.userName || "User"}
-                    </div>
-                    <div className="notificationPage_date textcolorWT">
-                      {new Date(notification.date).toLocaleDateString()}
-                    </div>
-                  </div>
-                  {notification.status === "completed" && (
-                    <div className="notificationPage_status">
-                      <CheckCircleOutlined className="completed-icon" />
-                    </div>
-                  )}
-                </div>
-
-                {notification.imageUrl && !imageError[`${notification._id}-content`] && (
-                  <div className="notificationPage_image">
-                    <div className="notification-image-container">
-                      <Image 
-                        src={getImageUrl(notification.imageUrl)}
-                        alt={notification.title || "Notification image"}
-                        width={800}
-                        height={600}
-                        className="notification-image"
-                        onError={() => handleImageError(notification._id, 'content')}
-                        priority
-                        unoptimized={notification.imageUrl?.startsWith('data:')}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="notificationPage_content">
-                  <div className="notificationPage_titleName textcolorWT">
-                    {notification.title}
-                  </div>
-                  <div className="notificationPage_discretion textcolorWT">
-                    {notification.description}
-                  </div>
-                </div>
-
-                {notification.status !== "completed" && (
-                  <div className="notificationPage_actions">
-                    <button 
-                      className={`notificationPage_actionBtn ${loading[notification._id] === 'read' ? 'loading' : ''}`}
-                      onClick={() => handleNotificationClick(notification)}
-                      disabled={loading[notification._id]}
-                    >
-                      {loading[notification._id] === 'read' ? <LoadingOutlined /> : 'Mark as Read'}
-                    </button>
-                    <button 
-                      className={`notificationPage_actionBtn notificationPage_actionBtnPrimary ${loading[notification._id] === 'complete' ? 'loading' : ''}`}
-                      onClick={() => moveTaskToStatus(notification)}
-                      disabled={loading[notification._id]}
-                    >
-                      {loading[notification._id] === 'complete' ? <LoadingOutlined /> : 'Complete Task'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
+          ))}
         </div>
-      </div>
-    </>
+      ) : (
+        <div className="no-notifications">
+          No notifications found
+        </div>
+      )}
+    </div>
   );
 };
 

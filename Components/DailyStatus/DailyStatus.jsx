@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ApiDelete, ApiGet } from '../../helpers/API/ApiData';
+import { ApiGet, ApiPost, ApiDelete } from '../../helpers/API/ApiData';
+import { ENDPOINTS } from '../../config/API/api-prod';
 import { notification, Modal } from 'antd';
 import { ExclamationCircleOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
@@ -7,6 +8,9 @@ const DailyStatus = () => {
   const [deletingTask, setDeletingTask] = useState({});
   const [userData, setUserData] = useState(null);
   const [tasks, setTasks] = useState({});
+  const [dailyStatus, setDailyStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
@@ -18,11 +22,16 @@ const DailyStatus = () => {
 
   const fetchDailyStatus = async (userId) => {
     try {
-      const today = new Date();
-      const date = today.toISOString().split('T')[0];
-      const response = await ApiGet(`report/get-daily-status?userId=${userId}&date=${date}`);
+      setLoading(true);
+      setError(null);
+      const date = new Date().toISOString().split('T')[0];
+      console.log('Fetching daily status for:', { userId, date });
       
-      if (response.status === 200) {
+      const response = await ApiGet(ENDPOINTS.DAILY_STATUS, { userId, date });
+      console.log('Daily status response:', response);
+      
+      if (response.data) {
+        setDailyStatus(response.data);
         // Group tasks by project
         const groupedTasks = {};
         
@@ -44,55 +53,56 @@ const DailyStatus = () => {
       }
     } catch (error) {
       console.error('Error fetching daily status:', error);
+      setError(error.response?.data?.message || 'Failed to fetch daily status');
       notification.error({
         message: 'Error',
-        description: 'Failed to fetch daily status',
+        description: 'Failed to fetch daily status. Please try again.',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteTask = async (task) => {
+  const handleDeleteTask = async (reportId, type, taskId) => {
     Modal.confirm({
-      title: 'Delete Task',
+      title: 'Are you sure you want to delete this task?',
       icon: <ExclamationCircleOutlined />,
-      content: `Are you sure you want to delete this ${task.type.toLowerCase()}?`,
+      content: 'This action cannot be undone.',
       okText: 'Yes',
       okType: 'danger',
       cancelText: 'No',
-      onOk: async () => {
+      async onOk() {
         try {
-          setDeletingTask(prev => ({ ...prev, [task._id]: true }));
-          
-          // Determine the correct endpoint based on task type
-          const type = task.isPlan ? 'plan' : 'status';
-          const reportId = task.reportId || task._id;
-          
-          const response = await ApiDelete(`report/delete/${reportId}/${type}/${task._id}`);
-          
-          if (response.status === 200) {
+          const response = await ApiDelete(ENDPOINTS.DELETE_STATUS(reportId, type, taskId));
+          if (response.data) {
             notification.success({
               message: 'Success',
-              description: `${task.type} deleted successfully`,
+              description: 'Task deleted successfully',
             });
-            // Refresh the tasks list
-            if (userData) {
-              fetchDailyStatus(userData.id);
+            // Refresh the data
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            if (userInfo) {
+              fetchDailyStatus(userInfo.id);
             }
-          } else {
-            throw new Error(`Failed to delete ${task.type.toLowerCase()}`);
           }
         } catch (error) {
-          console.error(`Error deleting task:`, error);
+          console.error('Error deleting task:', error);
           notification.error({
             message: 'Error',
-            description: error.response?.data?.message || `Failed to delete task`,
+            description: error.response?.data?.message || 'Failed to delete task',
           });
-        } finally {
-          setDeletingTask(prev => ({ ...prev, [task._id]: false }));
         }
       },
     });
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div className="dailyStatus">
@@ -111,7 +121,7 @@ const DailyStatus = () => {
                     <div className="dailyStatus_actions">
                       <button
                         className="dailyStatus_actionBtn dailyStatus_deleteBtn"
-                        onClick={() => handleDeleteTask(task)}
+                        onClick={() => handleDeleteTask(dailyStatus._id, task.type.toLowerCase(), task._id)}
                         disabled={deletingTask[task._id]}
                       >
                         <DeleteOutlined />
