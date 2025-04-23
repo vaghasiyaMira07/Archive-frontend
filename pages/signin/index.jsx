@@ -4,7 +4,6 @@ import { ApiPost } from "../../helpers/API/ApiData";
 import Loding from '../../Components/Loding/Loding'
 import { notification } from 'antd';
 import { ENDPOINTS } from "../../config/API/api-prod";
-import Image from 'next/image';
 
 const index = () => {
   const router = useRouter();
@@ -28,13 +27,11 @@ const index = () => {
     setlodingState(true);
     e.preventDefault();
     try {
-      console.log('Attempting login with:', getData);
-      console.log('Login URL:', ENDPOINTS.LOGIN);
-      
       const response = await ApiPost(ENDPOINTS.LOGIN, getData);
-      console.log('Login response:', response);
+      console.log('Login response:', response); // For debugging
       
       if (response.data && response.data.token) {
+        // Store token without JSON.stringify since it's already a string
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userInfo", JSON.stringify(response.data.user));
         
@@ -49,7 +46,7 @@ const index = () => {
         throw new Error('Invalid response from server');
       }
     } catch (error) {
-      console.error("Login error details:", error.response || error);
+      console.error("Login error:", error);
       localStorage.removeItem("token");
       localStorage.removeItem("userInfo");
       
@@ -68,15 +65,11 @@ const index = () => {
     <Loding display={lodingState} blure={true}/>
       <div className="loginpage">
         <div className="loginpage-img">
-          <div style={{ position: 'relative', width: '200px', height: '100px' }}>
-            <Image
-              src="https://archive-backend-phi.vercel.app/logo.png"
-              alt="Logo"
-              layout="fill"
-              objectFit="contain"
-              priority
-            />
-          </div>
+          <img
+            src="/image/homepage/signup.svg"
+            alt="Logo"
+            className="loginpage-img-logo"
+          />
         </div>
         <div className="loginpage-section">
           <form className="loginpage-section-mainform" onSubmit={SubmitData}>

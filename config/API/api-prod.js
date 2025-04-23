@@ -2,7 +2,7 @@
 // const host = "api.dailystatus.rejoicehub.com/api/v1";
 
 // Production API Configuration
-const host = "archive-backend-phi.vercel.app";
+const host = "archive-backend-phi.vercel.app/api/v1";
 
 export const API_URL = `https://${host}`;
 
@@ -10,20 +10,18 @@ export const API_URL = `https://${host}`;
 export const ENDPOINTS = {
   // Auth
   LOGIN: `${API_URL}/user/login`,
-  REGISTER: `${API_URL}/user/register`,
-  FORGOT_PASSWORD: `${API_URL}/user/forgot-password`,
-  RESET_PASSWORD: `${API_URL}/user/reset-password`,
+  REGISTER: `${API_URL}/auth/register`,
+  FORGOT_PASSWORD: `${API_URL}/auth/forgot-password`,
+  RESET_PASSWORD: `${API_URL}/auth/reset-password`,
 
   // User
   USER_PROFILE: `${API_URL}/user/profile`,
   UPDATE_PROFILE: `${API_URL}/user/update-profile`,
   CHANGE_PASSWORD: `${API_URL}/user/change-password`,
-  GET_ALL_USERS: `${API_URL}/user/find-all`,
 
   // Projects
   PROJECTS: `${API_URL}/projects`,
   PROJECT_DETAILS: (id) => `${API_URL}/projects/${id}`,
-  PROJECT_USERS: `${API_URL}/project/selectuser`,
 
   // Reports
   DAILY_STATUS: `${API_URL}/report/daily-status`,

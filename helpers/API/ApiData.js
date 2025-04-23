@@ -8,83 +8,36 @@ import * as authUtil from "./../../utils/auth.util";
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: "https://archive-backend-phi.vercel.app",
+  baseURL: ENDPOINTS.API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  // Add timeout and retry logic
-  timeout: 10000, // 10 seconds
-  retries: 3,
-  retryDelay: 1000,
 });
 
 // Add request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        // Remove quotes if token is stored with them
-        const cleanToken = token.replace(/^"|"$/g, "");
-        config.headers.Authorization = `Bearer ${cleanToken}`;
-      }
-      // Log the request for debugging
-      console.log(`${config.method?.toUpperCase()} Request to:`, config.url);
-      return config;
-    } catch (error) {
-      console.error("Request interceptor error:", error);
-      return config;
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
   },
   (error) => {
-    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
 
 // Add response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => {
-    // Log successful responses for debugging
-    console.log(`Response from ${response.config.url}:`, response.status);
-    return response;
-  },
-  async (error) => {
-    console.error("API Error:", error.response || error);
-
-    // Get the original request config
-    const originalRequest = error.config;
-
+  (response) => response,
+  (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem("token");
       localStorage.removeItem("userInfo");
       window.location.href = "/signin";
-    } else if (error.response?.status === 404) {
-      // Log detailed information for 404 errors
-      console.error("Resource not found:", {
-        url: originalRequest.url,
-        method: originalRequest.method,
-        headers: originalRequest.headers,
-      });
     }
-
-    // Implement retry logic for failed requests
-    if (originalRequest._retry !== true && originalRequest.retries > 0) {
-      originalRequest._retry = true;
-      originalRequest.retries -= 1;
-
-      try {
-        // Wait before retrying
-        await new Promise((resolve) =>
-          setTimeout(resolve, originalRequest.retryDelay)
-        );
-        return await api(originalRequest);
-      } catch (retryError) {
-        return Promise.reject(retryError);
-      }
-    }
-
     return Promise.reject(error);
   }
 );
@@ -95,7 +48,6 @@ export const ApiGet = async (endpoint, params = {}) => {
     const response = await api.get(endpoint, { params });
     return response;
   } catch (error) {
-    console.error(`GET ${endpoint} failed:`, error.response || error);
     throw error;
   }
 };
@@ -105,7 +57,9 @@ export const ApiPost = async (endpoint, data = {}) => {
     const response = await api.post(endpoint, data);
     return response;
   } catch (error) {
-    console.error(`POST ${endpoint} failed:`, error.response || error);
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
     throw error;
   }
 };
@@ -115,7 +69,6 @@ export const ApiPut = async (endpoint, data = {}) => {
     const response = await api.put(endpoint, data);
     return response;
   } catch (error) {
-    console.error(`PUT ${endpoint} failed:`, error.response || error);
     throw error;
   }
 };
@@ -125,28 +78,6 @@ export const ApiDelete = async (endpoint) => {
     const response = await api.delete(endpoint);
     return response;
   } catch (error) {
-    console.error(`DELETE ${endpoint} failed:`, error.response || error);
-    throw error;
-  }
-};
-
-// Specialized functions for project and user endpoints
-export const getProjectUsers = async () => {
-  try {
-    const response = await ApiGet("/project/selectuser");
-    return response.data;
-  } catch (error) {
-    console.error("Failed to fetch project users:", error);
-    throw error;
-  }
-};
-
-export const getAllUsers = async () => {
-  try {
-    const response = await ApiGet("/user/find-all");
-    return response.data;
-  } catch (error) {
-    console.error("Failed to fetch all users:", error);
     throw error;
   }
 };
@@ -156,40 +87,110 @@ export const ApiUpload = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await api.post("/upload", formData, {
+    const response = await api.post(ENDPOINTS.UPLOAD, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
     return response;
   } catch (error) {
-    console.error("File upload failed:", error.response || error);
     throw error;
   }
 };
 
-// No auth API calls
-export const ApiPostNoAuth = async (endpoint, data = {}) => {
-  try {
-    const response = await api.post(endpoint, data);
-    return response;
-  } catch (error) {
-    console.error(
-      `POST ${endpoint} (no auth) failed:`,
-      error.response || error
-    );
-    throw error;
-  }
+export const ApiPostNoAuth = (type, userData) => {
+  // const [loading] = useAxiosLoader();
+  console.log("In api post without auth", ENDPOINTS);
+  console.log(ENDPOINTS.API_URL);
+  return (
+    // loading ? Loader()  :
+
+    new Promise((resolve, reject) => {
+      api
+        .post(
+          ENDPOINTS.API_URL + type,
+          userData,
+          getHttpOptions({ isAuth: false })
+        )
+        .then((responseJson) => {
+          console.log("call no auth api");
+          resolve(responseJson);
+        })
+        .catch((error) => {
+          if (
+            error &&
+            error.hasOwnProperty("response") &&
+            error.response &&
+            error.response.hasOwnProperty("data") &&
+            error.response.data &&
+            error.response.data.hasOwnProperty("error") &&
+            error.response.data.error
+          ) {
+            reject(error.response.data.error);
+          } else {
+            reject(error);
+          }
+        });
+    })
+  );
 };
 
-export const ApiGetNoAuth = async (endpoint, params = {}) => {
-  try {
-    const response = await api.get(endpoint, { params });
-    return response;
-  } catch (error) {
-    console.error(`GET ${endpoint} (no auth) failed:`, error.response || error);
-    throw error;
-  }
+export const ApiPutNoAuth = (type, userData) => {
+  console.log("In api put without auth", ENDPOINTS);
+  console.log(ENDPOINTS.API_URL);
+  // debugger
+  return new Promise((resolve, reject) => {
+    api
+      .put(
+        ENDPOINTS.API_URL + type,
+        userData,
+        getHttpOptions({ isAuth: false })
+      )
+      .then((responseJson) => {
+        console.log("call no auth api");
+        resolve(responseJson);
+      })
+      .catch((error) => {
+        if (
+          error &&
+          error.hasOwnProperty("response") &&
+          error.response &&
+          error.response.hasOwnProperty("data") &&
+          error.response.data &&
+          error.response.data.hasOwnProperty("error") &&
+          error.response.data.error
+        ) {
+          reject(error.response.data.error);
+        } else {
+          reject(error);
+        }
+      });
+  });
+};
+
+export const ApiGetNoAuth = (type) => {
+  return new Promise((resolve, reject) => {
+    api
+      .get(ENDPOINTS.API_URL + type, getHttpOptions({ isAuth: false }))
+      .then((responseJson) => {
+        resolve(responseJson);
+      })
+      .catch((error) => {
+        if (
+          error &&
+          error.hasOwnProperty("response") &&
+          error.response &&
+          error.response.hasOwnProperty("data") &&
+          error.response.data &&
+          error.response.data.hasOwnProperty("error") &&
+          error.response.data.error
+        ) {
+          reject(error.response.data.error);
+        } else {
+          reject(error);
+        }
+      });
+  });
 };
 
 export const Api = (type, methodtype, userData) => {
@@ -312,8 +313,4 @@ export default {
   ApiPut,
   ApiDelete,
   ApiUpload,
-  ApiPostNoAuth,
-  ApiGetNoAuth,
-  getProjectUsers,
-  getAllUsers,
 };
