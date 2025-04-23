@@ -1,13 +1,11 @@
-import API_DEV from "./api-dev";
-import API_LOCAL from "./api-local";
-// import API_PROD from "./api-prod";
-const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-const port = typeof window !== 'undefined' ? window.location.port : '';
-let isLocalApi = port >= 3000;
+import { ENDPOINTS } from "./api-prod";
 
-export const API =
-  hostname === "localhost" && isLocalApi
-    ? API_LOCAL
-    : hostname === "localhost"
-    ? API_DEV
-    : API_LOCAL;
+// API Configuration
+export const API = {
+  endpoint: ENDPOINTS.API_URL,
+  isLocalApi: false,
+  isDevApi: false,
+  isProdApi: true,
+};
+
+export default API;

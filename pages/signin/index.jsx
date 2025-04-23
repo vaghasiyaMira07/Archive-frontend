@@ -1,60 +1,48 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { ApiDelete, ApiGet, ApiPost } from "../../helpers/API/ApiData";
-import Loding from '../../Components/Loding/Loding'
+import { ApiPost } from "../../helpers/API/ApiData";
+import { ENDPOINTS } from "../../config/API/api-prod";
+import Image from "next/image";
 import { notification } from 'antd';
+import Loding from '../../Components/Loding/Loding'
 
-const index = () => {
+const SignIn = () => {
   const router = useRouter();
   const [lodingState, setlodingState]=useState(false);
   
-  const [getData, setgetData] = useState({
+  const [getData, setGetData] = useState({
     email: "",
     password: "",
   });
 
-  const fordata = (e) => {
-    if(e.target.name==='email') {return  setgetData((data) => {
-      return { ...data, [e.target.name]: (e.target.value).toLowerCase()};
-    });}
-    setgetData((data) => {
-      return { ...data, [e.target.name]: e.target.value };
+  const handleChange = (e) => {
+    setGetData({
+      ...getData,
+      [e.target.name]: e.target.value,
     });
   };
 
   const SubmitData = async (e) => {
     setlodingState(true)
     e.preventDefault();
-    await ApiPost("user/login", getData)
-      .then((res) => {
-        if (res.data.msg) {
-          notification.open({
-            message: 'Sign In',
-            description: res.data.msg,
-          });
-          setlodingState(false)
-
-        } else {
-          localStorage.setItem("token", JSON.stringify(res.data.token));
-          localStorage.setItem("userInfo", JSON.stringify(res.data.user));
-          router.push("/dashboard");
-          notification.open({
-            message: 'Sign In',
-            description: "Sign in Successful,"
-          });
-          setlodingState(false)
-
-        }
-      })
-      .catch((err) => {
+    try {
+      const response = await ApiPost(ENDPOINTS.LOGIN, getData);
+      if (response.data) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("userInfo", JSON.stringify(response.data.user));
+        router.push("/dashboard");
         notification.open({
-          message: 'Error',
-          description: "err",
+          message: 'Sign In',
+          description: "Sign in Successful,"
         });
-        localStorage.removeItem("userInfo");
-        setlodingState(false)
-
-      });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert(error.response?.data?.message || "Login failed. Please try again.");
+      localStorage.removeItem("userInfo");
+    } finally {
+      setlodingState(false)
+    }
   };
 
   return (
@@ -62,41 +50,38 @@ const index = () => {
     <Loding display={lodingState} blure={true}/>
       <div className="loginpage">
         <div className="loginpage-img">
-          <img
-            src="/image/homepage/signup.svg"
-            alt="sda"
+          <Image
+            src="/images/logo.png"
+            alt="Logo"
+            width={200}
+            height={100}
             className="loginpage-img-logo"
           />
         </div>
         <div className="loginpage-section">
           <form className="loginpage-section-mainform">
-            <div className="mb-3">
+            <div className="form-group">
               <input
                 type="email"
-                className="form-control inputField"
-                id="exampleInputEmail1"
-                aria-describedby="emailHelp"
-                placeholder="Email"
                 name="email"
+                placeholder="Email"
                 value={getData.email}
-                onChange={(e) => fordata(e)}
+                onChange={handleChange}
                 required
               />
             </div>
-            <div className="mb-3">
+            <div className="form-group">
               <input
                 type="password"
-                className="form-control inputField"
-                id="exampleInputPassword1"
-                placeholder="Password"
                 name="password"
+                placeholder="Password"
                 value={getData.password}
-                onChange={(e) => fordata(e)}
+                onChange={handleChange}
                 required
               />
             </div>
             <button className="loginbtn" onClick={(e) => SubmitData(e)}>
-              SIGN IN
+              Login
             </button>
           </form>
         </div>
@@ -105,4 +90,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default SignIn;
