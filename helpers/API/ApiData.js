@@ -8,7 +8,7 @@ import * as authUtil from "./../../utils/auth.util";
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: ENDPOINTS.API_URL,
+  baseURL: "https://archive-backend-phi.vercel.app",
   headers: {
     "Content-Type": "application/json",
   },
@@ -19,7 +19,9 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Remove quotes if token is stored with them
+      const cleanToken = token.replace(/^"|"$/g, "");
+      config.headers.Authorization = `Bearer ${cleanToken}`;
     }
     return config;
   },
@@ -32,6 +34,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error("API Error:", error.response || error);
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem("token");
@@ -48,6 +51,7 @@ export const ApiGet = async (endpoint, params = {}) => {
     const response = await api.get(endpoint, { params });
     return response;
   } catch (error) {
+    console.error(`GET ${endpoint} failed:`, error.response || error);
     throw error;
   }
 };
@@ -57,9 +61,7 @@ export const ApiPost = async (endpoint, data = {}) => {
     const response = await api.post(endpoint, data);
     return response;
   } catch (error) {
-    if (error.response?.data?.message) {
-      throw new Error(error.response.data.message);
-    }
+    console.error(`POST ${endpoint} failed:`, error.response || error);
     throw error;
   }
 };
@@ -69,6 +71,7 @@ export const ApiPut = async (endpoint, data = {}) => {
     const response = await api.put(endpoint, data);
     return response;
   } catch (error) {
+    console.error(`PUT ${endpoint} failed:`, error.response || error);
     throw error;
   }
 };
@@ -78,6 +81,7 @@ export const ApiDelete = async (endpoint) => {
     const response = await api.delete(endpoint);
     return response;
   } catch (error) {
+    console.error(`DELETE ${endpoint} failed:`, error.response || error);
     throw error;
   }
 };
@@ -87,110 +91,40 @@ export const ApiUpload = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await api.post(ENDPOINTS.UPLOAD, formData, {
+    const response = await api.post("/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
     return response;
   } catch (error) {
+    console.error("File upload failed:", error.response || error);
     throw error;
   }
 };
 
-export const ApiPostNoAuth = (type, userData) => {
-  // const [loading] = useAxiosLoader();
-  console.log("In api post without auth", ENDPOINTS);
-  console.log(ENDPOINTS.API_URL);
-  return (
-    // loading ? Loader()  :
-
-    new Promise((resolve, reject) => {
-      api
-        .post(
-          ENDPOINTS.API_URL + type,
-          userData,
-          getHttpOptions({ isAuth: false })
-        )
-        .then((responseJson) => {
-          console.log("call no auth api");
-          resolve(responseJson);
-        })
-        .catch((error) => {
-          if (
-            error &&
-            error.hasOwnProperty("response") &&
-            error.response &&
-            error.response.hasOwnProperty("data") &&
-            error.response.data &&
-            error.response.data.hasOwnProperty("error") &&
-            error.response.data.error
-          ) {
-            reject(error.response.data.error);
-          } else {
-            reject(error);
-          }
-        });
-    })
-  );
+// No auth API calls
+export const ApiPostNoAuth = async (endpoint, data = {}) => {
+  try {
+    const response = await api.post(endpoint, data);
+    return response;
+  } catch (error) {
+    console.error(
+      `POST ${endpoint} (no auth) failed:`,
+      error.response || error
+    );
+    throw error;
+  }
 };
 
-export const ApiPutNoAuth = (type, userData) => {
-  console.log("In api put without auth", ENDPOINTS);
-  console.log(ENDPOINTS.API_URL);
-  // debugger
-  return new Promise((resolve, reject) => {
-    api
-      .put(
-        ENDPOINTS.API_URL + type,
-        userData,
-        getHttpOptions({ isAuth: false })
-      )
-      .then((responseJson) => {
-        console.log("call no auth api");
-        resolve(responseJson);
-      })
-      .catch((error) => {
-        if (
-          error &&
-          error.hasOwnProperty("response") &&
-          error.response &&
-          error.response.hasOwnProperty("data") &&
-          error.response.data &&
-          error.response.data.hasOwnProperty("error") &&
-          error.response.data.error
-        ) {
-          reject(error.response.data.error);
-        } else {
-          reject(error);
-        }
-      });
-  });
-};
-
-export const ApiGetNoAuth = (type) => {
-  return new Promise((resolve, reject) => {
-    api
-      .get(ENDPOINTS.API_URL + type, getHttpOptions({ isAuth: false }))
-      .then((responseJson) => {
-        resolve(responseJson);
-      })
-      .catch((error) => {
-        if (
-          error &&
-          error.hasOwnProperty("response") &&
-          error.response &&
-          error.response.hasOwnProperty("data") &&
-          error.response.data &&
-          error.response.data.hasOwnProperty("error") &&
-          error.response.data.error
-        ) {
-          reject(error.response.data.error);
-        } else {
-          reject(error);
-        }
-      });
-  });
+export const ApiGetNoAuth = async (endpoint, params = {}) => {
+  try {
+    const response = await api.get(endpoint, { params });
+    return response;
+  } catch (error) {
+    console.error(`GET ${endpoint} (no auth) failed:`, error.response || error);
+    throw error;
+  }
 };
 
 export const Api = (type, methodtype, userData) => {
@@ -313,4 +247,6 @@ export default {
   ApiPut,
   ApiDelete,
   ApiUpload,
+  ApiPostNoAuth,
+  ApiGetNoAuth,
 };
